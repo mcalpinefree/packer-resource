@@ -1,0 +1,34 @@
+---
+resources:
+  - name: packer-resource
+    type: git
+    source:
+      uri: https://github.com/ci-pipeline/packer-resource.git
+      branch: master
+  - name: packer-resource-image
+    type: docker-image
+    source:
+      repository: pipelineci/packer-resource
+      username: {{dockerhub-username}}
+      password: {{dockerhub-password}}
+
+jobs:
+  - name: packer-resource-build
+    serial: true
+    plan:
+      - get: packer-resource
+        trigger: true
+      - aggregate:
+        - task: build-check
+          input_mapping: {resource: packer-resource}
+          file: packer-resource/ci/tasks/build-check.yml
+        - task: build-in
+          input_mapping: {resource: packer-resource}
+          file: packer-resource/ci/tasks/build-in.yml
+        - task: build-out
+          input_mapping: {resource: packer-resource}
+          file: packer-resource/ci/tasks/build-out.yml
+      - put: packer-resource-image
+        params:
+          build: ./
+          dockerfile: packer-resource/Dockerfile
