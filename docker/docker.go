@@ -59,7 +59,7 @@ func fstab_contains_cgroup() bool {
 func create_cgroups() {
 	previous_dir, _ := os.Getwd()
 	os.Chdir("/sys/fs/cgroup")
-	file, err := os.Open("/sys/fs/cgroup")
+	file, err := os.Open("/proc/cgroups")
 	if err != nil {
 		log.Fatal(err)
 	}
