@@ -48,7 +48,6 @@ func getNameServer() string {
 func main() {
 	os.Chdir(os.Args[1])
 	input := utils.GetInput()
-	utils.Logln(input)
 
 	var source Source
 	err := mapstructure.Decode(input.Source, &source)
@@ -56,12 +55,12 @@ func main() {
 		panic(err)
 	}
 
+
 	if source.Type == "docker" {
 		var params DockerParams
 		if err := mapstructure.Decode(input.Params, &params); err != nil {
 			panic(err)
 		}
-		utils.Logln(params)
 		docker.CgroupfsMount()
 		cmd := docker.StartDocker()
 		var b []byte
@@ -80,9 +79,9 @@ func main() {
 		commonArgs = append(commonArgs, "-var")
 		commonArgs = append(commonArgs, "version="+version)
 		commonArgs = append(commonArgs, "-var")
-		commonArgs = append(commonArgs, "aws_access_key="+params.AwsAccessKeyId)
+		commonArgs = append(commonArgs, "aws_access_key_id="+params.AwsAccessKeyId)
 		commonArgs = append(commonArgs, "-var")
-		commonArgs = append(commonArgs, "aws_secret_key="+params.AwsSecretAccessKey)
+		commonArgs = append(commonArgs, "aws_secret_access_key="+params.AwsSecretAccessKey)
 		commonArgs = append(commonArgs, "-var")
 		commonArgs = append(commonArgs, "nameserver="+nameserver)
 		commonArgs = append(commonArgs, params.PackerJson)
@@ -101,13 +100,13 @@ func main() {
 			os.Exit(1)
 		}
 
+		//metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
+		result := utils.VersionResult{
+			Version:  atc.Version{"docker": version},
+			//Metadata: metadata,
+		}
+		output, _ := json.Marshal(result)
+		fmt.Printf("%s", string(output))
 	}
-
-	metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
-	result := utils.VersionResult{
-		Version:  atc.Version{"docker": "sha12312"},
-		Metadata: metadata,
-	}
-	output, _ := json.Marshal(result)
-	fmt.Printf("%s", string(output))
 }
+

@@ -15,12 +15,16 @@ resource_types:
 
 ## Source Configuration
 
-* ``: *Required.*
+* `type`: *Required.* Either `docker` or `amazon-ebs`.
 
 ### Example
 
 
 ``` yaml
+- name: myapp-packer-docker
+  type: packer-resource
+  source:
+    type: docker
 ```
 
 ## Behaviour
@@ -32,5 +36,13 @@ resource_types:
 ### `out`: Build the packer script.
 
 #### Parameters
-* ``: *Required.*
-* ``: *Optional.*
+* `build_dir`: *Required.* Directory that contains the packer json and
+  resources.
+* `packer_json`: *Required.* The filename of the packer script.
+* `version_dir`: *Required.* Directory that contains the semver resource. And
+  will be provided to the packer environment via `-var version=<version>`.
+* `aws_access_key_id`: *Optional.* This variables will be provided the packer
+  environment via `-var aws_access_key_id=<aws_access_key_id>`.
+* `aws_secret_access_key`: *Optional.* This variables will be provided the packer
+  environment via `-var aws_secret_access_key=<aws_secret_access_key>`.
+
