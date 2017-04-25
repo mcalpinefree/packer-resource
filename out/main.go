@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"strings"
 
@@ -27,6 +28,23 @@ type DockerParams struct {
 	AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
 }
 
+func getNameServer() string {
+	b, err := ioutil.ReadFile("/etc/resolv.conf")
+	if err != nil {
+		panic(err)
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		fields := strings.Fields(line)
+		if fields[0] == "nameserver" {
+			nameserver := net.ParseIP(fields[1])
+			if nameserver != nil {
+				return nameserver.String()
+			}
+		}
+	}
+	return ""
+}
+
 func main() {
 	os.Chdir(os.Args[1])
 	input := utils.GetInput()
@@ -46,15 +64,17 @@ func main() {
 		utils.Logln(params)
 		docker.CgroupfsMount()
 		cmd := docker.StartDocker()
-
-		b, err := ioutil.ReadFile(params.VersionDir + "/version")
+		var b []byte
+		var err error
+		b, err = ioutil.ReadFile(params.VersionDir + "/version")
 		if err != nil {
 			panic(err)
 		}
 		version := strings.TrimSpace(string(b))
 
-		os.Chdir(params.BuildDir)
+		nameserver := getNameServer()
 
+		os.Chdir(params.BuildDir)
 		commonArgs := []string{}
 		commonArgs = append(commonArgs, "-only=docker")
 		commonArgs = append(commonArgs, "-var")
@@ -63,6 +83,8 @@ func main() {
 		commonArgs = append(commonArgs, "aws_access_key="+params.AwsAccessKeyId)
 		commonArgs = append(commonArgs, "-var")
 		commonArgs = append(commonArgs, "aws_secret_key="+params.AwsSecretAccessKey)
+		commonArgs = append(commonArgs, "-var")
+		commonArgs = append(commonArgs, "nameserver="+nameserver)
 		commonArgs = append(commonArgs, params.PackerJson)
 		if docker.RunCmd("packer", append([]string{"validate"}, commonArgs...)...) != 0 {
 			utils.Logln("packer script was not validated")
