@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/ci-pipeline/concourse-ci-resource/utils"
@@ -27,8 +28,8 @@ type AmazonEbsParams struct {
 	VarFile            string `mapstructure:"var_file"`
 	AwsAccessKeyId     string `mapstructure:"aws_access_key_id"`
 	AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	VpcId string `mapstructure:"vpc_id"`
-	SubnetId string `mapstructure:"subnet_id"`
+	VpcId              string `mapstructure:"vpc_id"`
+	SubnetId           string `mapstructure:"subnet_id"`
 }
 
 type DockerParams struct {
@@ -115,10 +116,19 @@ func main() {
 			os.Exit(1)
 		}
 
-		lines := strings.Split(packerOutput, "\n")
+		re := regexp.MustCompile("--> docker: Imported Docker image: (sha256:[a-z0-9]+)")
+		var dockerImage string
+		for _, line := range strings.Split(packerOutput, "\n") {
+			match := re.FindStringSubmatch(line)
+			if match != nil && len(match[1]) > 0 {
+				dockerImage = match[1]
+				break
+			}
+		}
+
 		//metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
 		result = utils.VersionResult{
-			Version:  atc.Version{"docker": strings.Fields(lines[len(lines) - 1])[5]},
+			Version: atc.Version{"docker": dockerImage},
 			//Metadata: metadata,
 		}
 	} else if source.Type == "amazon-ebs" {
@@ -167,10 +177,19 @@ func main() {
 			os.Exit(1)
 		}
 
-		lines := strings.Split(packerOutput, "\n")
+		re := regexp.MustCompile("[a-z]+-[a-z]+-[0-9]: (ami-[a-z0-9]+)")
+		var ami string
+		for _, line := range strings.Split(packerOutput, "\n") {
+			match := re.FindStringSubmatch(line)
+			if match != nil && len(match[1]) > 0 {
+				ami = match[1]
+				break
+			}
+		}
+
 		//metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
 		result = utils.VersionResult{
-			Version:  atc.Version{"ami": strings.Fields(lines[len(lines) - 1])[1]},
+			Version: atc.Version{"ami": ami},
 			//Metadata: metadata,
 		}
 	}

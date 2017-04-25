@@ -2,6 +2,8 @@ package docker
 
 import (
 	"bufio"
+	"bytes"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -9,10 +11,23 @@ import (
 	"syscall"
 )
 
+type teeOutput struct {
+	o1 io.Writer
+	o2 io.Writer
+}
+
+func (t *teeOutput) Write(p []byte) (n int, err error) {
+	n1, err1 := t.o1.Write(p)
+	t.o2.Write(p)
+	return n1, err1
+}
+
 func RunCmd(name string, arg ...string) (string, int) {
+	var b bytes.Buffer
+	tee := &teeOutput{o1: os.Stderr, o2: &b}
 	// http://stackoverflow.com/questions/10385551/get-exit-code-go
 	cmd := exec.Command(name, arg...)
-	cmd.Stdout = os.Stderr
+	cmd.Stdout = tee
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("cmd.Start: %v")
 	}
@@ -25,15 +40,13 @@ func RunCmd(name string, arg ...string) (string, int) {
 			// defined for both Unix and Windows and in both cases has
 			// an ExitStatus() method with the same signature.
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-				output, _ := cmd.CombinedOutput()
-				return string(output), status.ExitStatus()
+				return b.String(), status.ExitStatus()
 			}
 		} else {
 			log.Fatalf("cmd.Wait: %v", err)
 		}
 	}
-	output, _ := cmd.CombinedOutput()
-	return string(output), 0
+	return b.String(), 0
 }
 
 func fstab_contains_cgroup() bool {
@@ -117,9 +130,9 @@ func CgroupfsMount() {
 
 func StartDocker() *exec.Cmd {
 	cmd := exec.Command("dockerd",
-	"--host=unix:///var/run/docker.sock",
-	"--host=tcp://0.0.0.0:2375",
-	"--storage-driver=vfs")
+		"--host=unix:///var/run/docker.sock",
+		"--host=tcp://0.0.0.0:2375",
+		"--storage-driver=vfs")
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("cmd.Start: %v")
 	}
