@@ -1,14 +1,22 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/ci-pipeline/concourse-ci-resource/utils"
 )
 
 func main() {
-	result := utils.VersionResult{}
-	output, _ := json.Marshal(result)
-	fmt.Println(string(output))
+	destination := os.Args[1]
+	input := utils.GetInput()
+	utils.Logln(input.Version)
+
+	for k, v := range input.Version.(map[interface{}]interface{}) {
+		err := ioutil.WriteFile(destination+"/"+k.(string), []byte(v.(string)), 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 }
