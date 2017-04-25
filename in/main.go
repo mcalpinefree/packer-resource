@@ -14,7 +14,7 @@ func main() {
 	utils.Logln(input.Version)
 
 	for k, v := range input.Version.(map[string]interface{}) {
-		err := ioutil.WriteFile(destination+"/"+k.(string), []byte(v.(string)), 0644)
+		err := ioutil.WriteFile(destination+"/"+k, []byte(v.(string)), 0644)
 		if err != nil {
 			panic(err)
 		}
