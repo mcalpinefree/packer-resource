@@ -18,7 +18,10 @@ func main() {
 	input := utils.GetInput()
 	utils.Logln(input)
 	metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
-	result := utils.VersionResult{Metadata: metadata}
+	result := utils.VersionResult{
+		Version:  atc.Version{"docker": "sha12312"},
+		Metadata: metadata,
+	}
 	output, _ := json.Marshal(result)
 	fmt.Printf("%s", string(output))
 }
