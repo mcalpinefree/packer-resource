@@ -11,6 +11,7 @@ import (
 	"github.com/ci-pipeline/concourse-ci-resource/utils"
 	"github.com/ci-pipeline/packer-resource/docker"
 	"github.com/concourse/atc"
+	"github.com/mitchellh/mapstructure"
 )
 
 type Source struct {
@@ -31,10 +32,17 @@ func main() {
 	input := utils.GetInput()
 	utils.Logln(input)
 
-	source := input.Source.(Source)
+	var source Source
+	err := mapstructure.Decode(input.Source, &source)
+	if err != nil {
+		panic(err)
+	}
 
 	if source.Type == "docker" {
-		params := input.Params.(DockerParams)
+		var params DockerParams
+		if err := mapstructure.Decode(input.Params, &params); err != nil {
+			panic(err)
+		}
 		utils.Logln(params)
 		docker.CgroupfsMount()
 		cmd := docker.StartDocker()
