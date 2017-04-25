@@ -20,12 +20,15 @@ type Source struct {
 }
 
 type AmazonEbsParams struct {
+	SourceAmiPath      string `mapstructure:"source_ami_path"`
 	BuildDir           string `mapstructure:"build_dir"`
 	PackerJson         string `mapstructure:"packer_json"`
 	VersionDir         string `mapstructure:"version_dir"`
 	VarFile            string `mapstructure:"var_file"`
 	AwsAccessKeyId     string `mapstructure:"aws_access_key_id"`
 	AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	VpcId string `mapstructure:"vpc_id"`
+	SubnetId string `mapstructure:"subnet_id"`
 }
 
 type DockerParams struct {
@@ -64,6 +67,7 @@ func main() {
 		panic(err)
 	}
 
+	var result utils.VersionResult
 
 	if source.Type == "docker" {
 		var params DockerParams
@@ -113,11 +117,56 @@ func main() {
 
 		lines := strings.Split(packerOutput, "\n")
 		//metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
-		result := utils.VersionResult{
+		result = utils.VersionResult{
 			Version:  atc.Version{"docker": strings.Fields(lines[len(lines) - 1])[5]},
 			//Metadata: metadata,
 		}
-		output, _ := json.Marshal(result)
-		fmt.Printf("%s", string(output))
+	} else if source.Type == "amazon-ebs" {
+		var params AmazonEbsParams
+		if err := mapstructure.Decode(input.Params, &params); err != nil {
+			panic(err)
+		}
+		var b []byte
+		var err error
+		b, err = ioutil.ReadFile(params.VersionDir + "/version")
+		if err != nil {
+			panic(err)
+		}
+		version := strings.TrimSpace(string(b))
+
+		os.Chdir(params.BuildDir)
+		commonArgs := []string{}
+		commonArgs = append(commonArgs, "-only=amazon-ebs")
+		commonArgs = append(commonArgs, "-var")
+		commonArgs = append(commonArgs, "version="+version)
+		commonArgs = append(commonArgs, "-var")
+		commonArgs = append(commonArgs, "aws_access_key_id="+params.AwsAccessKeyId)
+		commonArgs = append(commonArgs, "-var")
+		commonArgs = append(commonArgs, "aws_secret_access_key="+params.AwsSecretAccessKey)
+		commonArgs = append(commonArgs, "-var")
+		commonArgs = append(commonArgs, "vpc_id="+params.VpcId)
+		commonArgs = append(commonArgs, "-var")
+		commonArgs = append(commonArgs, "subnet_id="+params.SubnetId)
+		commonArgs = append(commonArgs, params.PackerJson)
+		if _, exitStatus := docker.RunCmd("packer", append([]string{"validate"}, commonArgs...)...); exitStatus != 0 {
+			utils.Logln("packer script was not validated")
+			os.Exit(1)
+		}
+		packerOutput, exitStatus := docker.RunCmd("packer", append([]string{"build"}, commonArgs...)...)
+
+		if exitStatus != 0 {
+			utils.Logln("Was not built")
+			os.Exit(1)
+		}
+
+		lines := strings.Split(packerOutput, "\n")
+		//metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
+		result = utils.VersionResult{
+			Version:  atc.Version{"ami": strings.Fields(lines[len(lines) - 1])[1]},
+			//Metadata: metadata,
+		}
 	}
+
+	output, _ := json.Marshal(result)
+	fmt.Printf("%s", string(output))
 }

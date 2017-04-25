@@ -36,6 +36,9 @@ resource_types:
 ### `out`: Build the packer script.
 
 #### Parameters
+* `source_ami_path`: *Required for amazon-ebs.* Path to file containing the
+  source AMI ID. Provided to the packer environment via `-var
+  source_ami=<source_ami>`.
 * `build_dir`: *Required.* Directory that contains the packer json and
   resources.
 * `packer_json`: *Required.* The filename of the packer script.
