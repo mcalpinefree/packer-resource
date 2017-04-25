@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	utils.Logln("Running in")
 	destination := os.Args[1]
 	input := utils.GetInput()
 	utils.Logln(input.Version)
