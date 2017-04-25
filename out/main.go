@@ -19,12 +19,12 @@ type Source struct {
 }
 
 type DockerParams struct {
-	BuildDir           string `json:"build_dir"`
-	PackerJson         string `json:"packer_json"`
-	VersionDir         string `json:"version_dir"`
-	VarFile            string `json:"var_file"`
-	AwsAccessKeyId     string `json:"aws_access_key_id"`
-	AwsSecretAccessKey string `json:"aws_secret_access_key"`
+	BuildDir           string `mapstructure:"build_dir"`
+	PackerJson         string `mapstructure:"packer_mapstructure"`
+	VersionDir         string `mapstructure:"version_dir"`
+	VarFile            string `mapstructure:"var_file"`
+	AwsAccessKeyId     string `mapstructure:"aws_access_key_id"`
+	AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
 }
 
 func main() {
