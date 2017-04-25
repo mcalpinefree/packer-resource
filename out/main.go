@@ -19,6 +19,15 @@ type Source struct {
 	Type string `json:"type"`
 }
 
+type AmazonEbsParams struct {
+	BuildDir           string `mapstructure:"build_dir"`
+	PackerJson         string `mapstructure:"packer_json"`
+	VersionDir         string `mapstructure:"version_dir"`
+	VarFile            string `mapstructure:"var_file"`
+	AwsAccessKeyId     string `mapstructure:"aws_access_key_id"`
+	AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+}
+
 type DockerParams struct {
 	BuildDir           string `mapstructure:"build_dir"`
 	PackerJson         string `mapstructure:"packer_json"`
@@ -85,14 +94,16 @@ func main() {
 		commonArgs = append(commonArgs, "-var")
 		commonArgs = append(commonArgs, "nameserver="+nameserver)
 		commonArgs = append(commonArgs, params.PackerJson)
-		if docker.RunCmd("packer", append([]string{"validate"}, commonArgs...)...) != 0 {
+		if _, exitStatus := docker.RunCmd("packer", append([]string{"validate"}, commonArgs...)...); exitStatus != 0 {
 			utils.Logln("packer script was not validated")
 			if err := cmd.Process.Kill(); err != nil {
 				log.Fatal("failed to kill: ", err)
 			}
 			os.Exit(1)
 		}
-		if docker.RunCmd("packer", append([]string{"build"}, commonArgs...)...) != 0 {
+		packerOutput, exitStatus := docker.RunCmd("packer", append([]string{"build"}, commonArgs...)...)
+
+		if exitStatus != 0 {
 			utils.Logln("Was not built")
 			if err := cmd.Process.Kill(); err != nil {
 				log.Fatal("failed to kill: ", err)
@@ -100,13 +111,13 @@ func main() {
 			os.Exit(1)
 		}
 
+		lines := strings.Split(packerOutput, "\n")
 		//metadata := []atc.MetadataField{atc.MetadataField{Name: "Test", Value: "Value"}}
 		result := utils.VersionResult{
-			Version:  atc.Version{"docker": version},
+			Version:  atc.Version{"docker": strings.Fields(lines[len(lines) - 1])[5]},
 			//Metadata: metadata,
 		}
 		output, _ := json.Marshal(result)
 		fmt.Printf("%s", string(output))
 	}
 }
-

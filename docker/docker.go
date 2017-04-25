@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func RunCmd(name string, arg ...string) int {
+func RunCmd(name string, arg ...string) (string, int) {
 	// http://stackoverflow.com/questions/10385551/get-exit-code-go
 	cmd := exec.Command(name, arg...)
 	cmd.Stdout = os.Stderr
@@ -25,13 +25,15 @@ func RunCmd(name string, arg ...string) int {
 			// defined for both Unix and Windows and in both cases has
 			// an ExitStatus() method with the same signature.
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-				return status.ExitStatus()
+				output, _ := cmd.CombinedOutput()
+				return string(output), status.ExitStatus()
 			}
 		} else {
 			log.Fatalf("cmd.Wait: %v", err)
 		}
 	}
-	return 0
+	output, _ := cmd.CombinedOutput()
+	return string(output), 0
 }
 
 func fstab_contains_cgroup() bool {
@@ -74,8 +76,8 @@ func create_cgroups() {
 		if len(fields) > 3 && fields[3] == "1" {
 			sys := fields[0]
 			os.Mkdir(sys, 0775)
-			if RunCmd("mountpoint", "-q", sys) != 0 {
-				if RunCmd("mount", "-n", "-t", "cgroup", "-o", sys, "cgroup", sys) != 0 {
+			if _, exitStatus := RunCmd("mountpoint", "-q", sys); exitStatus != 0 {
+				if _, exitStatus := RunCmd("mount", "-n", "-t", "cgroup", "-o", sys, "cgroup", sys); exitStatus != 0 {
 					RunCmd("rmdir", sys)
 				}
 			}
@@ -105,7 +107,7 @@ func CgroupfsMount() {
 	}
 
 	// mount /sys/fs/cgroup
-	if RunCmd("mountpoint", "-q", "/sys/fs/cgroup") != 0 {
+	if _, exitStatus := RunCmd("mountpoint", "-q", "/sys/fs/cgroup"); exitStatus != 0 {
 		RunCmd("mount", "-t", "tmpfs", "-o", "uid=0,gid=0,mode=0755", "cgroup", "/sys/fs/cgroup")
 	}
 
