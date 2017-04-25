@@ -20,7 +20,7 @@ type Source struct {
 
 type DockerParams struct {
 	BuildDir           string `mapstructure:"build_dir"`
-	PackerJson         string `mapstructure:"packer_mapstructure"`
+	PackerJson         string `mapstructure:"packer_json"`
 	VersionDir         string `mapstructure:"version_dir"`
 	VarFile            string `mapstructure:"var_file"`
 	AwsAccessKeyId     string `mapstructure:"aws_access_key_id"`
