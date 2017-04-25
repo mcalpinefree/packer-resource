@@ -12,7 +12,7 @@ import (
 func RunCmd(name string, arg ...string) int {
 	// http://stackoverflow.com/questions/10385551/get-exit-code-go
 	cmd := exec.Command(name, arg...)
-	cmd.Stdout = cmd.Stderr
+	cmd.Stdout = os.Stderr
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("cmd.Start: %v")
 	}
