@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	utils.Logln("Running out")
 	utils.Logln("Change to build directory")
 	utils.GoToBuildDirectory()
 	cwd, _ := os.Getwd()
