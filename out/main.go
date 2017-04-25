@@ -134,6 +134,12 @@ func main() {
 		}
 		version := strings.TrimSpace(string(b))
 
+		b, err = ioutil.ReadFile(params.SourceAmiPath)
+		if err != nil {
+			panic(err)
+		}
+		sourceAmi := strings.TrimSpace(string(b))
+
 		os.Chdir(params.BuildDir)
 		commonArgs := []string{}
 		commonArgs = append(commonArgs, "-only=amazon-ebs")
@@ -147,6 +153,8 @@ func main() {
 		commonArgs = append(commonArgs, "vpc_id="+params.VpcId)
 		commonArgs = append(commonArgs, "-var")
 		commonArgs = append(commonArgs, "subnet_id="+params.SubnetId)
+		commonArgs = append(commonArgs, "-var")
+		commonArgs = append(commonArgs, "source_ami="+sourceAmi)
 		commonArgs = append(commonArgs, params.PackerJson)
 		if _, exitStatus := docker.RunCmd("packer", append([]string{"validate"}, commonArgs...)...); exitStatus != 0 {
 			utils.Logln("packer script was not validated")
