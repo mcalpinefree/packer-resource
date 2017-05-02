@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -87,6 +88,11 @@ func main() {
 
 		nameserver := getNameServer()
 
+		varFile := ""
+		if _, err := os.Stat(params.VarFile); err == nil {
+			varFile, _ = filepath.Abs(params.VarFile)
+		}
+
 		os.Chdir(params.BuildDir)
 		commonArgs := []string{}
 		commonArgs = append(commonArgs, "-only=docker")
@@ -98,6 +104,11 @@ func main() {
 		commonArgs = append(commonArgs, "aws_secret_access_key="+params.AwsSecretAccessKey)
 		commonArgs = append(commonArgs, "-var")
 		commonArgs = append(commonArgs, "nameserver="+nameserver)
+
+		if varFile != "" {
+			commonArgs = append(commonArgs, "-var-file="+varFile)
+		}
+
 		commonArgs = append(commonArgs, params.PackerJson)
 		if _, exitStatus := docker.RunCmd("packer", append([]string{"validate"}, commonArgs...)...); exitStatus != 0 {
 			utils.Logln("packer script was not validated")
@@ -150,6 +161,11 @@ func main() {
 		}
 		sourceAmi := strings.TrimSpace(string(b))
 
+		varFile := ""
+		if _, err := os.Stat(params.VarFile); err == nil {
+			varFile, _ = filepath.Abs(params.VarFile)
+		}
+
 		os.Chdir(params.BuildDir)
 		commonArgs := []string{}
 		commonArgs = append(commonArgs, "-only=amazon-ebs")
@@ -165,6 +181,11 @@ func main() {
 		commonArgs = append(commonArgs, "subnet_id="+params.SubnetId)
 		commonArgs = append(commonArgs, "-var")
 		commonArgs = append(commonArgs, "source_ami="+sourceAmi)
+
+		if varFile != "" {
+			commonArgs = append(commonArgs, "-var-file="+varFile)
+		}
+
 		commonArgs = append(commonArgs, params.PackerJson)
 		if _, exitStatus := docker.RunCmd("packer", append([]string{"validate"}, commonArgs...)...); exitStatus != 0 {
 			utils.Logln("packer script was not validated")
